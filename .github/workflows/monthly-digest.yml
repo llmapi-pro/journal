@@ -1,0 +1,109 @@
+name: Monthly digest
+on:
+  schedule:
+    - cron: '0 3 1 * *'   # 1st of every month, 03:00 UTC = 11:00 Asia/Shanghai
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: monthly-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Configure git identity
+        run: |
+          git config user.email "noreply@llmapi.pro"
+          git config user.name "llmapi-pro automation"
+
+      - name: Compile previous-month digest
+        env:
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+        run: |
+          # Compute previous month (e.g., if today is 2026-05-01, target is 2026-04)
+          TARGET_MONTH=$(date -u -d "yesterday" +%Y-%m)
+          MONTH_NAME=$(date -u -d "yesterday" +"%B %Y")
+          DIGEST_PATH="articles/${TARGET_MONTH}-monthly-digest.md"
+
+          echo "Target month: $TARGET_MONTH ($MONTH_NAME)"
+          echo "Digest path: $DIGEST_PATH"
+
+          # Skip if already exists (prevent duplicate runs)
+          if [ -f "$DIGEST_PATH" ]; then
+            echo "Digest already exists, skipping."
+            exit 0
+          fi
+
+          # List articles from target month
+          ls articles/${TARGET_MONTH}-*.md 2>/dev/null > /tmp/month-articles.txt || true
+          ARTICLE_COUNT=$(wc -l < /tmp/month-articles.txt)
+
+          if [ "$ARTICLE_COUNT" -lt 1 ]; then
+            echo "No articles from $TARGET_MONTH found; skipping digest."
+            exit 0
+          fi
+
+          cat > /tmp/prompt.txt <<PROMPT_EOF
+          You are compiling a monthly digest for the llmapi-pro/journal blog. The blog covers engineering work on an Anthropic-protocol-compatible API relay.
+
+          Target month: ${MONTH_NAME} (${TARGET_MONTH})
+          Output file: ${DIGEST_PATH}
+
+          === HARD RULES — PRIVACY & TRUST ===
+
+          The digest is PUBLIC. Do NOT mention or imply: capturing user data, injecting/modifying user prompts, cross-session memory, behavioral metrics, or A/B testing on real users. If a referenced article touched these themes (it should not, but verify), summarize only the safe portions.
+
+          TASK
+
+          1. Read all articles in articles/${TARGET_MONTH}-*.md (excluding any existing digest file).
+          2. Write articles/${TARGET_MONTH}-monthly-digest.md with structure:
+
+             # Monthly digest: ${MONTH_NAME}
+             *Posted YYYY-MM-DD · ~3 min read*
+
+             > One-paragraph framing: what was the dominant theme this month?
+
+             ## Articles
+
+             For each article, write:
+             - **[Article Title](./YYYY-MM-DD-slug.md)** — 2-3 sentence factual summary. No marketing language.
+
+             ## Themes & throughlines
+             (1-2 short paragraphs identifying patterns across the articles)
+
+             ## What's planned next
+             (1 short paragraph; speculate carefully, don't promise)
+
+             ---
+             *[← Back to journal index](../README.md)*
+
+          3. Update README.md to add a link to the digest under a new \`### Monthly digests\` section (create if missing) at top of Contents.
+          4. Word count: 500-1200 words for digest body.
+          5. Commit and push:
+             git add articles/${TARGET_MONTH}-monthly-digest.md README.md
+             git commit -m "Add ${MONTH_NAME} monthly digest"
+             git push origin main
+
+          Final message: digest URL, article count summarized, wordcount.
+          PROMPT_EOF
+
+          claude --print --dangerously-skip-permissions --allowedTools "Bash,Read,Write,Edit,Glob,Grep" < /tmp/prompt.txt
