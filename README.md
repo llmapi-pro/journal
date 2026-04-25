@@ -20,6 +20,7 @@ These notes are written for engineers building or debugging Claude Code clients,
 
 ### Engineering culture
 
+- [Engineering depth: a technical inventory](./articles/2026-04-25-engineering-depth-technical-inventory.md) — A deliberate inventory of what an Anthropic-protocol-compatible relay actually does at the engineering layer. Twelve protocol patches, five-layer identity guard, fourteen flywheel rules.
 - [Why we say "Claude-compatible," not "Claude"](./articles/2026-04-25-claude-compatible-not-claude.md) — A short note on the legal and engineering value of holding a precise positioning vocabulary.
 
 
