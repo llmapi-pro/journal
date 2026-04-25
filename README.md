@@ -22,6 +22,11 @@ These notes are written for engineers building or debugging Claude Code clients,
 
 - [Why we say "Claude-compatible," not "Claude"](./articles/2026-04-25-claude-compatible-not-claude.md) — A short note on the legal and engineering value of holding a precise positioning vocabulary.
 
+
+### Strategy
+
+- [The backend trap: when your customers don't pick you, your distributors do](./articles/2026-04-25-the-backend-trap.md) — Why operating an Anthropic-compatible relay puts you one layer behind your users, what we are and aren't doing about it.
+
 ---
 
 ## Adjacent projects
