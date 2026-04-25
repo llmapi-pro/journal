@@ -1,7 +1,10 @@
 name: Monthly digest
 on:
-  schedule:
-    - cron: '0 3 1 * *'   # 1st of every month, 03:00 UTC = 11:00 Asia/Shanghai
+  # Schedule DISABLED 2026-04-25: large-input LLM task (read all month articles ~30KB)
+  # high risk of CF 524 timeout (same root cause as awesome + intel cron).
+  # Switching to manual mode — let Claude Code generate digest on user request.
+  # schedule:
+  #   - cron: '0 3 1 * *'
   workflow_dispatch:
 
 permissions:
