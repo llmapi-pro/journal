@@ -119,6 +119,8 @@ Our first drain implementation called `server.close()` immediately upon receivin
 
 The fix was the state machine above: track active streams, wait for them to reach zero, then close.
 
+The debugging session that produced the fix was short. We added a single log line — `console.log('active streams:', activeStreams)` — and redeployed. A subsequent deploy showed `activeStreams` hovering between 1 and 3 during the drain window. The relay was terminating before reaching zero. The counter was already in the state machine; we just hadn't been using it to gate the close. The change took twenty minutes to write and test. The embarrassment of shipping the broken version had been the expensive part.
+
 ## Edge case: the reconnect during drain
 
 What happens if Claude Code's client reconnect logic fires during the drain window — between step 1 (drain active) and step 5 (relay restarted)? The client makes a fresh connection to nginx. nginx, if not yet reloaded, routes it to relay-A in drain mode.
@@ -134,6 +136,22 @@ After implementing drain deploy:
 - Claude Code reconnect loops dropped from a mean of 2.3 per deploy (measured over six deploys pre-fix) to zero
 
 The remaining surface area for disruption is the nginx reload in steps 3 and 5. Each reload drops approximately 0–1 connections during the reload window (typically under 100ms). We've measured this at roughly 0.3% chance of a dropped connection per reload event under moderate load. We have not yet addressed this further; it would require moving to a zero-downtime reload mechanism at the nginx layer, which is a separate project.
+
+## The 120-second ceiling: why we chose a hard limit
+
+We did not arrive at 120 seconds casually. The choice came from examining production traces of tool-use chains that were completing normally. The 95th-percentile single-turn response time across our fleet sits at around 45 seconds — a model generating at moderate speed with a mid-length context. The 99th percentile, including tool calls and multi-step reasoning, reaches 80 seconds. A 120-second ceiling covers everything in the normal distribution and leaves a 40-second margin before the limit fires.
+
+The ceiling also serves as a circuit breaker for a class of errors we call "zombie streams." These are responses where the upstream model has returned a `200 OK`, the relay has started forwarding SSE events, but the stream never reaches a terminating `data: [DONE]` message. We see this in roughly 0.07% of responses — a rate low enough to not be a first-order problem, but high enough to matter during a drain operation that might otherwise wait indefinitely. Without a ceiling, a drain against a zombie stream would block forever. With a ceiling, it times out and the relay process terminates cleanly, and the next deploy step proceeds.
+
+When the ceiling fires, we log the stream's ID, its elapsed time, the last event type seen, and the upstream request ID. That log line has been useful in post-incident reviews for distinguishing a genuine zombie stream from an upstream backend that was simply slow.
+
+## When drain fails: partial stream termination
+
+Drain mode is not atomic. Between the moment a stream's SSE termination event fires and the moment `activeStreams` is decremented, there is a small window — typically under a millisecond — where the counter is momentarily inaccurate. If a drain signal arrives during that window, the relay may close before reaching zero.
+
+We handle this with a grace period. When drain mode activates, the relay notes the current `activeStreams` count and waits for it to reach zero. If the count reaches zero and then immediately climbs again (a stream ending and a new one starting in rapid succession), the drain deadline resets to `now + 120 seconds`. This can happen when Claude Code's reconnect logic lands on a draining relay before nginx has finished reloading — the same window described in the edge case section. The relay handles one or two such cycles without issue. If it cycles more than three times, we abort the drain and alert on-call: something is keeping the relay perpetually busy, and a manual review is warranted before the deploy proceeds.
+
+This self-healing behavior means the drain script in production rarely hits its full 120-second timeout. In practice, streams drain within 10–30 seconds. The timeout is there for the long-tail case, not the common case.
 
 ## What we'd do differently
 
