@@ -27,6 +27,7 @@ These notes are written for engineers building or debugging Claude Code clients,
 
 ### Strategy
 
+- [The OAuth-multiplexing trap](./articles/2026-04-25-oauth-multiplexing-trap.md) — Why the relay-architecture pattern of multiplexing official Claude accounts is hitting a structural wall, and what comes next.
 - [The open-weight race and the protocol-layer relay](./articles/2026-04-25-open-weight-race-protocol-layer.md) — When base models commoditize, the wrapper layer becomes the moat. A note on what the DeepSeek V4 / open-weight acceleration means for relay operators.
 - [The backend trap: when your customers don't pick you, your distributors do](./articles/2026-04-25-the-backend-trap.md) — Why operating an Anthropic-compatible relay puts you one layer behind your users, what we are and aren't doing about it.
 
