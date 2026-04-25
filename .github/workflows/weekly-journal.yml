@@ -1,0 +1,98 @@
+name: Weekly journal article
+on:
+  schedule:
+    - cron: '0 2 * * 2'   # Every Tuesday 02:00 UTC = 10:00 Asia/Shanghai
+  workflow_dispatch:        # Manual trigger button
+
+permissions:
+  contents: write           # Required to push article + index commit
+
+concurrency:
+  group: weekly-journal
+  cancel-in-progress: false
+
+jobs:
+  write-article:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Configure git identity
+        run: |
+          git config user.email "noreply@llmapi.pro"
+          git config user.name "llmapi-pro automation"
+
+      - name: Run weekly write task
+        env:
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+        run: |
+          cat > /tmp/prompt.txt <<'PROMPT_EOF'
+          You are continuing a public engineering blog (the journal) for llmapi.pro, an Anthropic-protocol-compatible API relay accessible from mainland China. Your task is to write ONE new article and commit it.
+
+          CONTEXT — DO NOT REPEAT ALREADY-PUBLISHED ARTICLES
+
+          Read `articles/` first to see what's been published. Pick a topic that is NOT yet covered.
+
+          === HARD RULES — PRIVACY & TRUST ===
+
+          This is a PUBLIC blog read by users, regulators, and competitors. The following topics are PROHIBITED in any article:
+
+          1. ANY mention of capturing, storing, or analyzing user requests, prompts, system prompts, tool schemas, or responses. Even framed as 'telemetry' or 'aggregated metrics' — do not write about it.
+          2. ANY mention of injecting, modifying, augmenting, or otherwise altering user prompts before they reach the model.
+          3. ANY mention of cross-session memory, user-behavior tracking, or learning from user trajectories.
+          4. ANY specific production metrics that imply data collection.
+          5. ANY mention of A/B testing on real users.
+
+          When in doubt, default to topics about: protocol parsing, streaming behavior, deploy mechanics, identity/compliance, business-side topics. NEVER topics about flywheels, behavioral injection, or user-data signals.
+
+          ANGLE LIST (in priority order — pick the highest unpublished one that does not violate the rules above):
+          1. SSE keep-alive: the heartbeat must start before the first byte
+          2. Tool-use ID conventions: when toolu_ meets call_
+          3. The day a tool-matcher hijacked the wrong tool — and the precision fix
+          4. Identity guard: the five-layer chain we built after a screenshot (compliance posture)
+          5. Long-context tool-use loops: detecting and breaking them (frame as protocol-error counters)
+          6. Drain deploy: how to swap a relay without tearing live SSE
+          7. Free keys to paid models: a 15-yuan lesson in tier validation
+          8. Why we picked single-base routing over smart multi-model routing
+          9. The cost of "I'll add fallbacks later" in a streaming relay
+          10. The handoff problem: when Claude Code sessions hit 400K tokens (claude-next genesis)
+          11. Subscription cycle stacking: the schema that made monthly + annual + upgrades coexist
+          12. CNY rails for Anthropic-compatible relays: Alipay, WeChat Pay, USDT integration
+          13. Public changelog discipline: why we publish what's broken before users file the bug
+          14. The Chinese Claude Code ecosystem: a six-month outside-in observation
+
+          STYLE
+          - 1500-2500 words, postmortem tone
+          - Real numbers ONLY for protocol/error rates/timing — not user behavior
+          - NO marketing language
+          - End with: --- *[← Back to journal index](../README.md)*
+          - Always say "Claude-compatible" or "Anthropic-protocol-compatible"; NEVER "we are Claude"
+
+          FILE STRUCTURE
+          - Save as `articles/YYYY-MM-DD-{kebab-slug}.md` (use today's UTC date)
+          - Add bullet to README.md index under appropriate H3 section
+
+          COMMIT & PUSH
+          1. git add articles/<file> README.md
+          2. git commit -m "Add article: <title>"
+          3. git push origin main
+
+          Final message: print article title, commit SHA, URL, wordcount, and a one-line self-check confirming you did not violate the privacy rules.
+
+          Do NOT touch files outside articles/ and README.md. Do NOT install dependencies.
+          PROMPT_EOF
+
+          claude --print --dangerously-skip-permissions --allowedTools "Bash,Read,Write,Edit,Glob,Grep" < /tmp/prompt.txt
