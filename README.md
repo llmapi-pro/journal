@@ -39,3 +39,16 @@ These notes are written for engineers building or debugging Claude Code clients,
 ---
 
 > *This journal is independent and not affiliated with Anthropic. Claude Code is Anthropic's official tool.*
+
+---
+
+## Sponsorship & Collaboration
+
+This journal documents an independent team's production relay stack. We're open to:
+
+- **Sponsored content / placement** in upcoming journal articles, with disclosure.
+- **Tooling integration partnerships** — your router, IDE extension, or agentic framework, listed as a tested companion.
+- **Backend / infrastructure partnerships** — model providers, search APIs, observability tools.
+- **Strategic conversations** — acquisition, regional licensing, deeper integrations.
+
+**Contact:** [partnerships@llmapi.pro](mailto:partnerships@llmapi.pro) · or open an issue here.
