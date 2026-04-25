@@ -22,6 +22,7 @@ These notes are written for engineers building or debugging Claude Code clients,
 
 - [Engineering depth: a technical inventory](./articles/2026-04-25-engineering-depth-technical-inventory.md) — A deliberate inventory of what an Anthropic-protocol-compatible relay actually does at the engineering layer. Protocol adaptation, streaming, compliance, and business-side mechanics that live below the relay surface.
 - [Why we say "Claude-compatible," not "Claude"](./articles/2026-04-25-claude-compatible-not-claude.md) — A short note on the legal and engineering value of holding a precise positioning vocabulary.
+- [Drain deploy: how to swap a relay without tearing live SSE](./articles/2026-04-25-drain-deploy-no-tearing-live-sse.md) — A deploy incident cost us a support email with a timestamp. The fix was a twelve-line state machine and a two-nginx-reload deploy script. What we got wrong first.
 
 
 ### Strategy
