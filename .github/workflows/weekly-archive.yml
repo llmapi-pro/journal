@@ -1,0 +1,41 @@
+name: Weekly archive.org snapshot
+on:
+  schedule:
+    - cron: '0 2 * * 1'   # Every Monday 02:00 UTC = 10:00 Asia/Shanghai
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Submit URLs to Wayback Machine
+        run: |
+          URLS=(
+            "https://llmapi.pro"
+            "https://llmapi.pro/blog/claude-code-from-china-setup-guide"
+            "https://llmapi.pro/blog/fix-claude-code-429-rate-limit-exceeded"
+            "https://llmapi.pro/blog/claude-code-tool-use-complete-guide"
+            "https://llmapi.pro/blog/claude-code-budget-guide-solo-developers"
+            "https://github.com/llmapi-pro"
+            "https://github.com/llmapi-pro/journal"
+            "https://github.com/llmapi-pro/awesome-claude-code-china"
+            "https://github.com/llmapi-pro/claude-code-setup"
+            "https://github.com/llmapi-pro/claude-md-templates"
+            "https://github.com/llmapi-pro/claude-next"
+            "https://llmapi-pro.github.io/journal/"
+          )
+          for url in "${URLS[@]}"; do
+            echo "::group::Snapshot $url"
+            curl -sS -A "Mozilla/5.0 (compatible; llmapi-archive/1.0)" \
+              -o /dev/null \
+              -w "  HTTP %{http_code}\n" \
+              --max-time 90 \
+              "https://web.archive.org/save/$url" || echo "  failed (continuing)"
+            echo "::endgroup::"
+            sleep 6
+          done
+          echo "Done. Wayback Machine indexes async — fresh snapshots typically appear within minutes."
