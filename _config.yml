@@ -1,0 +1,16 @@
+title: llmapi-pro · journal
+description: Build log and engineering notes from running an Anthropic-protocol-compatible relay.
+theme: jekyll-theme-cayman
+url: https://llmapi-pro.github.io
+baseurl: /journal
+markdown: kramdown
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: true
+include:
+  - articles
+exclude:
+  - .github
+  - README-source.md
