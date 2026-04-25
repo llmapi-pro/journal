@@ -24,7 +24,7 @@ Three categories of mismatch surfaced under real workloads:
 2. **Streaming semantics.** Both servers emit SSE, but the shape and ordering of `content_block_start` / `content_block_delta` / `message_stop` events differ subtly.
 3. **Tool ID conventions.** Claude Code emits `toolu_01...`-prefixed IDs. Some backends emit `call_...`-prefixed (OpenAI-style). The IDs round-trip back from the client and need to match exactly, or you get `400: tool_use_id mismatch` mid-conversation.
 
-Each became a patch. Lesson: capture real client traffic from day one. A folder of raw HTTP captures from the actual Claude Code binary is worth a hundred protocol-spec readings.
+Each became a patch. Lesson: trace your own development client at the bytes level from day one. Running your own Claude Code instance against a local proxy and reading what it actually sends is worth a hundred protocol-spec readings.
 
 ## Surprise 2 — SSE breakage doesn't look like SSE breakage
 
@@ -82,7 +82,7 @@ If you're building any kind of model-routing layer, plan for the identity layer 
 
 In rough priority order:
 
-1. **Capture all real client traffic from day one.**
+1. **Trace your own development client at the bytes level from day one.** Run a local proxy against your own Claude Code instance during development; what the protocol spec describes and what the binary emits are not always the same thing.
 2. **Validate at the boundary, twice.** Once when the request arrives (translate + reject if shape is wrong), once before forwarding (compose + assert your translation is well-formed).
 3. **Ship keep-alives before you ship streaming.**
 4. **Tool-call interception is a privileged action.** One well-tested place; don't sprinkle "if it looks like a search" checks across the codebase.
