@@ -17,6 +17,9 @@ These notes are written for engineers building or debugging Claude Code clients,
 ### Protocol adaptation
 
 - [Twelve protocol patches behind one relay](./articles/2026-04-25-twelve-patches-behind-one-relay.md) — Six months of running Anthropic-protocol-compatible traffic against a non-Claude backend. What broke, what we fixed, what we'd ship differently on day one.
+- [Reasoning blocks at the relay: what changes when the upstream emits thinking](./articles/2026-05-06-reasoning-blocks-at-the-relay.md) — Open-weight reasoning models ship interleaved thinking blocks. The protocol-translation layer to Claude Code grows a third kind of content block, with its own ordering, signature, and UX rules.
+- [A 15-second CPU stall from one unclosed XML tag](./articles/2026-05-06-fifteen-second-cpu-stall-regex-backtracking.md) — Catastrophic regex backtracking in our request-normalization path. Three-character regex fix, three-layer defense (bounded quantifier + per-request watchdog + nginx next_upstream).
+- [Tool-use IDs in the wild: when the same id appears twice](./articles/2026-05-06-tool-use-id-collisions-occurrence-counter.md) — Long sessions sometimes saw upstream-generated `tool_use_id` collisions. The fix is small (occurrence-counter dedup with two-direction translation); making it robust is not.
 
 ### Engineering culture
 
